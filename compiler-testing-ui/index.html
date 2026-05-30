@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LaTeX Compiler Test UI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-gradient"></div>
+    <main class="shell">
+      <header class="hero">
+        <div class="badge">Local Test</div>
+        <h1>LaTeX Compiler UI</h1>
+        <p>
+          Paste LaTeX or load a .tex file, then compile to PDF through your
+          microservice.
+        </p>
+      </header>
+
+      <section class="panel">
+        <form id="compileForm" class="form">
+          <div class="row">
+            <label for="apiBase">API Base</label>
+            <input
+              id="apiBase"
+              name="apiBase"
+              type="text"
+              value="http://localhost:8001"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="row split">
+            <div>
+              <label for="filename">Filename</label>
+              <input
+                id="filename"
+                name="filename"
+                type="text"
+                value="resume"
+                spellcheck="false"
+              />
+            </div>
+            <div>
+              <label for="latexFile">Load .tex file</label>
+              <input id="latexFile" name="latexFile" type="file" accept=".tex" />
+            </div>
+          </div>
+
+          <div class="row">
+            <label for="latexInput">LaTeX Source</label>
+            <textarea
+              id="latexInput"
+              name="latexInput"
+              rows="16"
+              placeholder="Paste LaTeX here or use the sample button."
+              spellcheck="false"
+            ></textarea>
+          </div>
+
+          <div class="actions">
+            <button type="button" id="loadSample">Use sample</button>
+            <button type="submit" class="primary">Compile PDF</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="status" id="status">Idle</div>
+        <pre class="error" id="errorBox" hidden></pre>
+        <div class="preview">
+          <div class="preview-header">
+            <h2>PDF Preview</h2>
+            <a id="downloadLink" class="download" href="#" download hidden>
+              Download PDF
+            </a>
+          </div>
+          <iframe id="pdfFrame" title="PDF preview"></iframe>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>Port 8001 for API, port 8002 for this UI.</span>
+      </footer>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

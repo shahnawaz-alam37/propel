@@ -1,0 +1,183 @@
+% ============================================================
+% RESUME TEMPLATE — ATS-OPTIMIZED FOR FAANG & STARTUPS
+% Compiler: Tectonic / pdflatex
+% Packages: minimal, all widely available
+% ============================================================
+
+\documentclass[10pt, letterpaper]{article}
+
+% ---------- PACKAGES (minimal set) ----------
+\usepackage[
+  top=0.5in, bottom=0.5in,
+  left=0.6in, right=0.6in
+]{geometry}
+\usepackage{enumitem}           % list control
+\usepackage{titlesec}           % section heading control
+\usepackage{hyperref}           % clickable links
+\usepackage{xcolor}             % colors
+\usepackage{fontawesome5}       % icons (optional, remove if not needed)
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}            % clean vector font
+
+% ---------- HYPERLINK STYLE ----------
+\hypersetup{
+  colorlinks=true,
+  urlcolor=black,
+  linkcolor=black
+}
+
+% ---------- NO PAGE NUMBER ----------
+\pagestyle{empty}
+
+% ---------- SECTION STYLE ----------
+\titleformat{\section}
+  {\bfseries\large\uppercase}
+  {}{0em}{}
+  [\vspace{-6pt}\rule{\linewidth}{0.5pt}\vspace{-4pt}]
+
+\titlespacing{\section}{0pt}{8pt}{4pt}
+
+% ---------- LIST SETTINGS ----------
+\setlist[itemize]{
+  leftmargin=0.2in,
+  itemsep=1pt,
+  parsep=0pt,
+  topsep=2pt
+}
+
+% ---------- CUSTOM COMMANDS ----------
+
+% Header name
+\newcommand{\resumename}[1]{%
+  {\Huge\bfseries #1}\\[4pt]
+}
+
+% Contact info row
+\newcommand{\contactinfo}[5]{%
+  \small
+  \faPhone\ #1 \quad
+  \faEnvelope\ \href{mailto:#2}{#2} \quad
+  \faLinkedin\ \href{https://linkedin.com/in/#3}{linkedin.com/in/#3} \quad
+  \faGithub\ \href{https://github.com/#4}{github.com/#4} \quad
+  \faMapMarker*\ #5
+  \\[2pt]
+}
+
+% Job entry
+% Usage: \jobentry{Company}{Role}{Location}{Date}{bullets...}
+\newcommand{\jobentry}[4]{%
+  \vspace{4pt}
+  \textbf{#1} \hfill \textit{#3} \\
+  \textit{#2} \hfill \small{#4}
+  \vspace{1pt}
+}
+
+% Project entry
+\newcommand{\projectentry}[3]{%
+  \vspace{4pt}
+  \textbf{#1} \textbar\ \textit{#2} \hfill \small{#3}
+  \vspace{1pt}
+}
+
+% Education entry
+\newcommand{\eduentry}[4]{%
+  \vspace{4pt}
+  \textbf{#1} \hfill \textit{#3} \\
+  \textit{#2} \hfill \small{#4}
+  \vspace{1pt}
+}
+
+% ============================================================
+% DOCUMENT
+% ============================================================
+\begin{document}
+
+% -------------------- HEADER --------------------
+\begin{center}
+  \resumename{Aaqil Mohammed Adil baig}
+  \contactinfo
+    {+91 9849575681}
+    {shahnawaz.alam1024@gmail.com}
+    {johndoe}
+    {johndoe}
+    {San Francisco, CA}
+\end{center}
+
+% -------------------- SUMMARY (optional) --------------------
+% Remove this section if not needed — many FAANG templates skip it
+\section{Summary}
+Results-driven software engineer with 5+ years of experience building
+scalable distributed systems and full-stack applications. Passionate about
+clean architecture, developer productivity, and high-impact products.
+
+% -------------------- SKILLS --------------------
+\section{Technical Skills}
+\begin{itemize}[leftmargin=0in, label={}]
+  \item \textbf{Languages:} Python, Java, TypeScript, Go, SQL
+  \item \textbf{Frameworks \& Tools:} React, Node.js, FastAPI, Spring Boot, Docker, Kubernetes
+  \item \textbf{Cloud \& Infra:} AWS (EC2, S3, Lambda, RDS), GCP, Terraform, CI/CD (GitHub Actions)
+  \item \textbf{Databases:} PostgreSQL, MySQL, MongoDB, Redis, DynamoDB
+\end{itemize}
+
+% -------------------- EXPERIENCE --------------------
+\section{Experience}
+
+\jobentry{Google}{Software Engineer II}{Mountain View, CA}{Jan 2022 -- Present}
+\begin{itemize}
+  \item Redesigned the real-time data pipeline processing \textbf{500M+ events/day}, reducing
+        end-to-end latency by \textbf{40\%} using Apache Kafka and Flink.
+  \item Led a cross-functional team of 6 engineers to ship a developer tooling feature
+        adopted by \textbf{2,000+ internal users} within the first quarter.
+  \item Optimized PostgreSQL query patterns, cutting p99 API response time from
+        \textbf{800ms to 120ms}.
+\end{itemize}
+
+\jobentry{Stripe}{Software Engineer}{Remote}{Jun 2019 -- Dec 2021}
+\begin{itemize}
+  \item Built and maintained payment reconciliation microservices handling
+        \textbf{\$2B+ in annual transaction volume}.
+  \item Reduced on-call incidents by \textbf{35\%} by introducing automated anomaly detection
+        using statistical thresholding on metrics dashboards.
+  \item Mentored 3 junior engineers; drove adoption of internal API standards
+        across 4 product teams.
+\end{itemize}
+
+\jobentry{Acme Corp}{Junior Software Engineer}{New York, NY}{Jul 2018 -- May 2019}
+\begin{itemize}
+  \item Developed RESTful APIs in Node.js serving mobile clients with \textbf{99.9\% uptime}.
+  \item Implemented automated test coverage from \textbf{20\% to 80\%}, reducing QA
+        cycle time by half.
+\end{itemize}
+
+% -------------------- PROJECTS --------------------
+\section{Projects}
+
+\projectentry{ResumeAI}{Next.js, FastAPI, Claude API, Tectonic}{2024}
+\begin{itemize}
+  \item AI-powered resume tailoring app that generates ATS-optimized LaTeX resumes
+        from job descriptions; deployed as a microservice using Docker + Fly.io.
+\end{itemize}
+
+\projectentry{OpenMetrics}{Go, Prometheus, Grafana}{2023}
+\begin{itemize}
+  \item Open-source observability toolkit with \textbf{1.2k GitHub stars}; handles custom
+        metric aggregation and alerting for distributed systems.
+\end{itemize}
+
+% -------------------- EDUCATION --------------------
+\section{Education}
+
+\eduentry{University of California, Berkeley}{B.S. Computer Science}{Berkeley, CA}{Aug 2014 -- May 2018}
+\begin{itemize}
+  \item GPA: 3.8/4.0 \textbar\ Dean's List (4 semesters)
+  \item Relevant Coursework: Algorithms, Distributed Systems, ML, Operating Systems
+\end{itemize}
+
+% -------------------- AWARDS / EXTRAS (optional) --------------------
+% \section{Awards \& Certifications}
+% \begin{itemize}[leftmargin=0in, label={}]
+%   \item AWS Certified Solutions Architect -- Associate (2023)
+%   \item HackMIT 2017 -- 1st Place, Infrastructure Track
+% \end{itemize}
+
+\end{document}
