@@ -1,0 +1,24 @@
+# Core AI / Agent framework
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langchain-community>=0.3.0
+langgraph>=0.2.0
+
+# OpenAI-compatible SDK (works with Gemini, Qwen, OpenAI, future Codex)
+openai>=1.40.0
+
+# API framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+
+# PDF extraction (for uploaded resumes)
+pdfplumber>=0.11.0
+pymupdf>=1.24.0
+
+# Utilities
+httpx>=0.27.0
+pydantic>=2.8.0
+pydantic-settings>=2.4.0
+python-dotenv>=1.0.0
+aiofiles>=24.1.0
