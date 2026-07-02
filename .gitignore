@@ -1,0 +1,7 @@
+V1_Agent
+V2_Agent
+tectonic_cache
+__pycache__
+
+*.tex
+*.pdf
