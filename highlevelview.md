@@ -252,54 +252,159 @@ CREATE TABLE conversations (
 
 ## GitHub Tickets (Issues)
 
-### Epic 1: Foundation & Data Layer
-- **#1** [Backend] Design database schema (PostgreSQL) – create migrations.
-- **#2** [Backend] Implement User & Auth Service (JWT, login/signup).
-- **#3** [Backend] Implement Resume Storage Service (S3 integration, version storage).
-- **#4** [Backend] Set up base FastAPI project with routing, middleware, health checks.
+### #1 – Correct JD & Resume Parsing System (with LLM)
 
-### Epic 2: Core Pipeline Refactoring
-- **#5** [Agent] Refactor single‑LLM pipeline into modular LangGraph workflow.
-- **#6** [Agent] Implement JD parsing node with structured JSON output (Groq).
-- **#7** [Agent] Implement Resume parsing node with structured JSON output.
-- **#8** [Agent] Implement LaTeX generation node with templating and GPT‑4o-mini.
-- **#9** [Agent] Implement LaTeX validation node (syntax check).
-- **#10** [Agent] Implement compilation node (Tectonic client).
-- **#11** [Agent] Implement error recovery loop (fix LaTeX up to 3 attempts).
-- **#12** [Agent] Add retry/fallback logic for each node (model switching).
+**Goal:** Replace the brittle single‑LLM parsing with a robust, structured extraction service using cheap, JSON‑mode LLMs. Ensure no extra tokens (e.g., `</thinking>`) appear in the output.
 
-### Epic 3: Chat & Version History
-- **#13** [Backend] Create conversation endpoints (save/retrieve messages).
-- **#14** [Backend] Version management – list, get, download PDF.
-- **#15** [Agent] Integrate conversation context into the tailoring engine (instructions from chat).
-- **#16** [Frontend] Build chat UI component with message history and PDF preview.
+**Subtasks:**
 
-### Epic 4: Monitoring & Observability
-- **#17** [Ops] Set up Prometheus metrics endpoint in FastAPI.
-- **#18** [Ops] Integrate Loki for structured logging.
-- **#19** [Ops] Add LangSmith/LangFuse tracing for all LLM calls.
-- **#20** [Backend] Implement token usage tracking per request/user and expose via admin API.
-- **#21** [Backend] Implement per‑user quota enforcement (daily/monthly limits).
+1.1 Define strict Pydantic schemas for JD and Resume (skills, experience, education, projects, etc.).
 
-### Epic 5: User Interface (Frontend)
-- **#22** [Frontend] Authentication pages (login, signup, password reset).
-- **#23** [Frontend] Dashboard showing user's resumes and JD list.
-- **#24** [Frontend] Upload workflow: drag‑and‑drop for resume + JD, start tailoring.
-- **#25** [Frontend] Version view with PDF preview and version timeline.
-- **#26** [Frontend] Chat panel to request modifications and see new versions generated.
-- **#27** [Frontend] User settings (quota, model preferences).
+1.2 Build a `parse_jd` endpoint that:
+  - Sends the raw JD text to `groq/llama3-70b-8192` with a system prompt enforcing JSON mode.
+  - Validates the response against the schema; retry with a fallback model (`gemini-1.5-flash`) if parsing fails.
 
-### Epic 6: Production Readiness
-- **#28** [Ops] Dockerize all services (write Dockerfiles and compose files).
-- **#29** [Ops] Set up Kubernetes manifests or Helm charts for deployment.
-- **#30** [Ops] Configure CI/CD pipeline (GitHub Actions) with tests, security scans, deployment.
-- **#31** [Backend] Implement caching for parsed JD/resume (Redis) to reduce LLM calls.
-- **#32** [Security] Add input sanitisation for LaTeX, rate limiting, and HTTPS configuration.
+1.3 Build a `parse_resume` endpoint similarly, accepting PDF/DOCX (convert to text first) and returning structured data.
 
-### Epic 7: Testing & Documentation
-- **#33** [Tests] Write unit tests for each service (parsing, generation, validation).
-- **#34** [Tests] Integration tests for the full pipeline (mock LLM).
-- **#35** [Docs] API documentation (OpenAPI) and user manual.
-- **#36** [Docs] Architecture decision record (ADR) for model selection and cost strategy.
+1.4 Add a caching layer (Redis) keyed by a hash of the input text to avoid repeated LLM calls for identical JDs/resumes.
+
+1.5 Implement unit tests that mock LLM responses to verify validation and error recovery.
+
+**Acceptance Criteria:**
+- Both parsers return valid JSON that matches the schema 99% of the time.
+- No malformed output (JSON parse errors) in production logs.
+
+---
+
+### #2 – Pass Data to LLM and Get Only LaTeX Code
+
+**Goal:** The generation LLM must output only valid LaTeX (no markdown, no extra prose, no thinking tags). Enforce this via system prompts and post‑processing.
+
+**Subtasks:**
+
+2.1 Design a system prompt that explicitly instructs the model: "Output only the LaTeX source code, nothing else. Do not wrap it in ``` or include explanations."
+
+2.2 Implement a post‑processing step that strips any leading/trailing text (e.g., using regex to extract content between `\begin{document}` and `\end{document}` if needed).
+
+2.3 Add a `temperature=0` and `max_tokens` limit to avoid runaway generation.
+
+2.4 Create a validation step that compiles with `tectonic --parse-only` to catch syntax errors before actual PDF generation; if it fails, trigger the fix loop (see #3).
+
+2.5 Log all generated LaTeX for debugging and to build a dataset for fine‑tuning.
+
+**Acceptance Criteria:**
+- The LLM output can be fed directly to tectonic without manual cleanup in >95% of runs.
+- Any remaining syntax errors are caught early and handled by the fix loop.
+
+---
+
+### #3 – New Architecture: Keyword Enrichment → LaTeX Generation
+
+**Goal:** Break the monolithic LLM call into two stages:
+- **Stage A** – An LLM enriches the parsed resume with keywords/phrases from the JD (ensuring ATS‑friendliness).
+- **Stage B** – Another LLM (or the same, but with a different prompt) takes the enriched data and generates the final LaTeX.
+
+This reduces the prompt complexity and allows using cheaper models for enrichment and a more capable one for generation.
+
+**Subtasks:**
+
+3.1 Design the enrichment prompt: given structured JD and resume, output only a JSON mapping of sections (e.g., "summary", "skills", "experience") with added keywords and rephrased bullets that align with the JD.
+
+3.2 Use a cheap model (e.g., `groq/llama3-70b-8192`) for enrichment; enable JSON mode.
+
+3.3 Design the LaTeX generation prompt: take the enriched JSON and a base LaTeX template, output only the full `.tex` file.
+
+3.4 Use a slightly more capable model (e.g., `gpt-4o-mini` or `claude-3-haiku`) for generation, with post‑processing as in #2.
+
+3.5 Compare quality and cost with the old monolithic approach; document findings (ADR).
+
+3.6 Implement the fix loop that, on compilation error, feeds the error log back to the enrichment model (or a dedicated fix model) to correct the LaTeX.
+
+**Acceptance Criteria:**
+- The new architecture produces a valid PDF with equal or better keyword alignment than the old method.
+- Cost per run is reduced by at least 30% (tracked via token usage).
+- The fix loop handles common errors (missing `\end{}`, misplaced `&` in tables) within 3 attempts.
+
+---
+
+### #4 – UI with Next.js
+
+**Goal:** Build a modern, responsive web interface that allows users to upload JDs and resumes, trigger the pipeline, and view/download the resulting PDF. Also provide a chat interface for iterative refinement.
+
+**Subtasks:**
+
+4.1 Set up a Next.js project with TypeScript, Tailwind CSS, and shadcn/ui components.
+
+4.2 Implement landing page with sign‑up / login (integrate with API).
+
+4.3 Build a dashboard showing the user's saved resumes and JDs, with options to create a new run.
+
+4.4 Create an upload workflow:
+  - Drag‑and‑drop for resume (PDF/DOCX) and JD (plain text or file).
+  - Form to add optional instructions (e.g., "emphasise leadership").
+  - Button to start the tailoring process, with a loading indicator and polling for progress.
+
+4.5 Build a PDF viewer (e.g., using `react-pdf`) to preview the generated resume without downloading.
+
+4.6 Implement a chat panel alongside the PDF preview (see #6) for requesting changes.
+
+**Acceptance Criteria:**
+- Users can upload files, start the pipeline, and see the resulting PDF within 2 minutes (UI feedback is smooth).
+- The UI is mobile‑friendly and passes basic accessibility checks.
+
+---
+
+### #5 – User Login & Profile
+
+**Goal:** Provide secure authentication and personalisation.
+
+**Subtasks:**
+
+5.1 Implement JWT‑based authentication in the backend (FastAPI) with sign‑up, login, and refresh tokens.
+
+5.2 Add OAuth2 social login (Google, GitHub) using `fastapi-users` or `authlib`.
+
+5.3 Create user profile endpoints (view/update name, email, quota tier).
+
+5.4 In the frontend, protect routes with middleware that checks token validity.
+
+5.5 Store user preferences (e.g., default LaTeX template, preferred model) in the database.
+
+**Acceptance Criteria:**
+- Users can register, log in, and stay authenticated across sessions.
+- Profile changes are reflected immediately.
+
+---
+
+### #6 – Data Persistence & History with Chat Compilations
+
+**Goal:** Store all user data (resumes, versions, conversations) and allow browsing history, version comparison, and iterative chat‑based refinement.
+
+**Subtasks:**
+
+6.1 Design the database schema (PostgreSQL) for: users, resumes, job_descriptions, versions (with LaTeX source and PDF URL), conversations (message history).
+
+6.2 Implement versioning:
+  - Each run creates a new version linked to a resume and a JD.
+  - Store the enriched data, the final LaTeX, and the PDF (S3).
+  - API endpoints to list versions, download PDF/TeX, and delete.
+
+6.3 Implement conversation storage:
+  - When a user chats, each message (user and assistant) is saved.
+  - The assistant's messages can reference a specific version.
+
+6.4 In the frontend, display a version timeline with thumbnails, and allow users to switch between versions.
+
+6.5 Implement a chat interface that:
+  - Sends user requests (e.g., "shorten the summary") to the backend.
+  - The backend appends the request to the conversation history and triggers a new pipeline run with those instructions.
+  - The new version appears in the timeline, and the chat updates with the assistant's response.
+
+6.6 Add a "revert to this version" feature that copies a previous version's LaTeX and re‑compiles (without LLM) for quick restoration.
+
+**Acceptance Criteria:**
+- All history is persistent; users can see all past versions and conversations.
+- Chat‑based modifications produce new versions without losing older ones.
+- Performance is acceptable even with hundreds of versions per user (pagination, lazy loading).
 
 ---
