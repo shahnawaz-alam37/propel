@@ -282,6 +282,8 @@ def _get_fallback_model_details():
         model = "gpt-4o-mini"
     elif provider == "qwen":
         model = "qwen-plus"
+    elif provider == "openrouter":
+        model = settings.resolved_model
     else:
         model = settings.resolved_model
         

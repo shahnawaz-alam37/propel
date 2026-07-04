@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     # ----------------------------------------------------------
     # LLM Provider — swap without touching agent code
     # ----------------------------------------------------------
-    # Options: "groq" | "gemini" | "qwen" | "openai" | "codex"
-    llm_provider: Literal["groq", "gemini", "qwen", "openai", "codex"] = "gemini"
+    # Options: "groq" | "gemini" | "qwen" | "openai" | "codex" | "openrouter"
+    llm_provider: Literal["groq", "gemini", "qwen", "openai", "codex", "openrouter"] = "gemini"
 
     # API key for whichever provider you're using
     llm_api_key: str = Field(..., env="LLM_API_KEY")
@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     qwen_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     openai_base_url: str = "https://api.openai.com/v1"
     groq_base_url: str = "https://api.groq.com/openai/v1"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
     # codex_base_url: str = "..."  # fill when available
 
     # ----------------------------------------------------------
@@ -36,6 +37,7 @@ class Settings(BaseSettings):
     qwen_default_model: str = "qwen-plus"
     openai_default_model: str = "gpt-4o"
     groq_default_model: str = "qwen/qwen3-32b"
+    openrouter_default_model: str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
 
     # ----------------------------------------------------------
     # Compiler service
@@ -68,6 +70,7 @@ class Settings(BaseSettings):
             "gemini": self.gemini_base_url,
             "qwen": self.qwen_base_url,
             "openai": self.openai_base_url,
+            "openrouter": self.openrouter_base_url,
             "codex": self.openai_base_url,   # adjust when codex ships
         }[self.llm_provider]
 
@@ -80,6 +83,7 @@ class Settings(BaseSettings):
             "gemini": self.gemini_default_model,
             "qwen": self.qwen_default_model,
             "openai": self.openai_default_model,
+            "openrouter": self.openrouter_default_model,
             "codex": "codex-1",
         }[self.llm_provider]
 

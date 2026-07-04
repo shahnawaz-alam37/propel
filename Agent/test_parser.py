@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from api.main import app
 from api.schemas import JDStructuredOutput, ResumeStructuredOutput
+from config.settings import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -216,8 +217,8 @@ def main():
     print("=" * 70)
     
     # Check settings
-    print(f"Active LLM Provider: {app.dependency_overrides.get('settings', app).settings.llm_provider}")
-    print(f"Active LLM Model: {app.dependency_overrides.get('settings', app).settings.resolved_model}")
+    print(f"Active LLM Provider: {settings.llm_provider}")
+    print(f"Active LLM Model: {settings.resolved_model}")
     print("-" * 70)
     
     client = TestClient(app)
