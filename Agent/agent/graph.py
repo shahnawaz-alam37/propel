@@ -32,12 +32,12 @@ from langgraph.graph import StateGraph, END
 
 from agent.state import ResumeAgentState
 from agent.llm_factory import get_llm
+from agent.parser import _call_llm_json, ParsingError
 from agent.prompts import (
-    PARSE_JD_SYSTEM, PARSE_JD_HUMAN,
-    PARSE_CANDIDATE_SYSTEM, PARSE_CANDIDATE_HUMAN,
     GENERATE_LATEX_SYSTEM, GENERATE_LATEX_HUMAN,
     FIX_LATEX_SYSTEM, FIX_LATEX_HUMAN,
 )
+from api.schemas import JDStructuredOutput, ResumeStructuredOutput
 from tools.resume_tools import compile_latex, extract_pdf_text
 from config.settings import settings
 
@@ -71,15 +71,6 @@ def _strip_fences(text: str) -> str:
     return clean.strip()
 
 
-def _extract_json_block(text: str) -> str:
-    clean = _strip_fences(_strip_think(text))
-    start = clean.find("{")
-    end = clean.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        return clean[start:end + 1]
-    return clean
-
-
 def _clean_latex_output(text: str) -> str:
     clean = _strip_fences(_strip_think(text))
     doc_start = clean.find("\\documentclass")
@@ -90,16 +81,6 @@ def _clean_latex_output(text: str) -> str:
     return clean.strip()
 
 
-def _safe_json(text: str) -> dict:
-    """Parse JSON from LLM output, stripping markdown fences if present."""
-    clean = _extract_json_block(text)
-    try:
-        return json.loads(clean)
-    except json.JSONDecodeError as e:
-        logger.warning(f"JSON parse failed: {e}. Raw: {clean[:200]}")
-        return {}
-
-
 # ================================================================
 # NODE 1 — parse_jd
 # Extracts structured data from the job description
@@ -107,11 +88,22 @@ def _safe_json(text: str) -> dict:
 
 def node_parse_jd(state: ResumeAgentState) -> dict:
     logger.info("Node: parse_jd")
-    raw = _call_llm(
-        PARSE_JD_SYSTEM,
-        PARSE_JD_HUMAN.format(job_description=state["job_description"])
+
+    jd_schema_str = json.dumps(JDStructuredOutput.model_json_schema(), indent=2)
+    system_prompt = (
+        "You are a precise job description analyst.\n"
+        "Extract structured information from the job description.\n"
+        "You MUST return ONLY valid JSON matching this schema:\n"
+        f"{jd_schema_str}\n"
+        "Do not return any explanations, markdown code blocks, or preamble. Return ONLY the JSON object."
     )
-    parsed = _safe_json(raw)
+    human_prompt = f"Extract structured information from this job description:\n\n{state['job_description']}"
+
+    try:
+        parsed = _call_llm_json(system_prompt, human_prompt, JDStructuredOutput)
+    except ParsingError:
+        parsed = {}
+
     return {
         "jd_keywords": parsed.get("keywords", []),
         "jd_role_title": parsed.get("role_title", "Software Engineer"),
@@ -119,7 +111,7 @@ def node_parse_jd(state: ResumeAgentState) -> dict:
         "status": "jd_parsed",
         "logs": [f"JD parsed: role={parsed.get('role_title')}, "
                  f"{len(parsed.get('keywords', []))} keywords extracted"],
-        "_jd_json": json.dumps(parsed, indent=2),   # pass-through for generate node
+        "_jd_json": json.dumps(parsed, indent=2),
     }
 
 
@@ -133,16 +125,25 @@ def node_parse_candidate(state: ResumeAgentState) -> dict:
 
     candidate_text = state["raw_input"]
 
-    # If input was a PDF, extract text first
     if state.get("input_mode") == "pdf":
         pdf_text = extract_pdf_text.invoke({"pdf_bytes_hex": candidate_text})
         candidate_text = pdf_text
 
-    raw = _call_llm(
-        PARSE_CANDIDATE_SYSTEM,
-        PARSE_CANDIDATE_HUMAN.format(candidate_text=candidate_text)
+    resume_schema_str = json.dumps(ResumeStructuredOutput.model_json_schema(), indent=2)
+    system_prompt = (
+        "You are a precise resume parser.\n"
+        "Extract structured professional information from the resume text.\n"
+        "You MUST return ONLY valid JSON matching this schema:\n"
+        f"{resume_schema_str}\n"
+        "Do not return any explanations, markdown code blocks, or preamble. Return ONLY the JSON object."
     )
-    parsed = _safe_json(raw)
+    human_prompt = f"Parse this candidate data into structured JSON:\n\n{candidate_text}"
+
+    try:
+        parsed = _call_llm_json(system_prompt, human_prompt, ResumeStructuredOutput)
+    except ParsingError:
+        parsed = {}
+
     name = parsed.get("full_name", "Candidate")
     return {
         "candidate_summary": json.dumps(parsed, indent=2),
