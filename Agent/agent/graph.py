@@ -1,27 +1,3 @@
-# ============================================================
-# agent/graph.py — the LangGraph agentic workflow
-#
-# Graph topology:
-#
-#  START
-#    │
-#    ▼
-#  parse_jd ──────────────────────────────────────────────┐
-#    │                                                     │
-#    ▼                                                     │
-#  parse_candidate                                         │
-#    │                                                     │
-#    ▼                                                     │
-#  generate_latex                                          │
-#    │                                                     │
-#    ▼                                                     │
-#  compile ──[success]──▶ END                              │
-#    │                                                     │
-#    └──[error + retries left]──▶ fix_latex ──────────────┘
-#                                     │
-#                            [retries exhausted]──▶ END(error)
-# ============================================================
-
 import json
 import logging
 import re
