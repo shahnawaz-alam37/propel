@@ -1,7 +1,3 @@
-# ============================================================
-# agent/state.py — the single source of truth that flows
-#                  through every node in the LangGraph
-# ============================================================
 
 from typing import Optional, Annotated
 from typing_extensions import TypedDict
